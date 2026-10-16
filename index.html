@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#eee2cb" />
+  <title>五子棋 · Gomoku</title>
+  <style>
+    :root{--ink:#211d19;--paper:#f3eadb;--wood:#d6a45f;--wood-dark:#a96e33;--red:#b74b35;--muted:#766b5f;--card:rgba(255,252,246,.74);--shadow:0 24px 70px rgba(53,36,20,.16)}
+    *{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Inter,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink)}
+    body{background:radial-gradient(circle at 15% 12%,rgba(255,255,255,.86),transparent 29%),linear-gradient(135deg,#f8f2e8,#e6d6bd);display:grid;place-items:center;padding:clamp(18px,4vw,48px);overflow-x:hidden}
+    body:before{content:"五 子 棋";position:fixed;right:-.08em;bottom:-.22em;font:900 clamp(110px,24vw,330px)/1 serif;letter-spacing:-.16em;color:rgba(69,45,26,.035);pointer-events:none;white-space:nowrap}
+    main{width:min(1120px,100%);display:grid;grid-template-columns:minmax(280px,1fr) minmax(270px,360px);gap:clamp(22px,4vw,58px);align-items:center;position:relative}
+    .game{min-width:0}.eyebrow{display:flex;align-items:center;gap:10px;color:var(--red);font-size:12px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;margin:0 0 12px}.eyebrow:before{content:"";width:28px;height:2px;background:currentColor}
+    h1{font:700 clamp(40px,6vw,76px)/.95 Georgia,"Noto Serif SC",serif;margin:0 0 12px;letter-spacing:-.06em}.lead{color:var(--muted);margin:0 0 26px;font-size:15px;line-height:1.7}
+    .board-shell{position:relative;width:min(100%,680px);aspect-ratio:1;background:linear-gradient(145deg,#e2b86f,#c88e49);border:1px solid rgba(76,46,21,.28);border-radius:20px;padding:clamp(12px,2.1vw,24px);box-shadow:var(--shadow),inset 0 1px rgba(255,255,255,.55)}
+    canvas{display:block;width:100%;height:100%;cursor:pointer;touch-action:none;border-radius:10px;outline:none}canvas:focus-visible{box-shadow:0 0 0 4px rgba(183,75,53,.35)}
+    aside{background:var(--card);border:1px solid rgba(74,49,28,.12);backdrop-filter:blur(18px);border-radius:24px;padding:28px;box-shadow:var(--shadow)}
+    .turn{display:flex;align-items:center;gap:15px;padding-bottom:23px;border-bottom:1px solid rgba(56,38,24,.12)}.stone{width:46px;height:46px;border-radius:50%;background:radial-gradient(circle at 34% 28%,#57514c 0,#171513 45%,#050505 77%);box-shadow:inset -5px -7px 11px rgba(0,0,0,.48),0 7px 14px rgba(27,18,12,.22);flex:none}.stone.white{background:radial-gradient(circle at 32% 27%,#fff,#eee9df 55%,#bbb2a5);box-shadow:inset -4px -6px 9px rgba(92,77,61,.19),0 7px 14px rgba(27,18,12,.18);border:1px solid #cec4b8}
+    .turn small{display:block;color:var(--muted);font-size:11px;letter-spacing:.12em;margin-bottom:5px}.turn strong{font:700 22px Georgia,"Noto Serif SC",serif}.badge{margin-left:auto;border:1px solid rgba(183,75,53,.28);color:var(--red);padding:6px 9px;border-radius:999px;font-size:11px;font-weight:800}
+    .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0}.stat{padding:15px;background:rgba(255,255,255,.43);border-radius:14px}.stat span{display:block;color:var(--muted);font-size:11px;margin-bottom:5px}.stat b{font-size:19px}
+    .actions{display:grid;gap:10px;margin-top:18px}button{appearance:none;border:0;border-radius:13px;padding:13px 16px;font:700 14px inherit;cursor:pointer;transition:.2s transform,.2s box-shadow,.2s background}button:active{transform:translateY(1px)}.primary{background:var(--ink);color:#fff;box-shadow:0 10px 20px rgba(33,29,25,.16)}.secondary{background:rgba(255,255,255,.55);color:var(--ink);border:1px solid rgba(67,43,24,.12)}button:hover{transform:translateY(-1px)}button:disabled{opacity:.38;cursor:not-allowed;transform:none}
+    .rules{margin:22px 0 0;color:var(--muted);font-size:12px;line-height:1.7}.rules b{color:var(--ink)}
+    .toast{position:fixed;left:50%;top:24px;transform:translate(-50%,-20px);background:#211d19;color:#fff;padding:11px 17px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:.28s;z-index:5;box-shadow:0 10px 30px rgba(0,0,0,.22)}.toast.show{opacity:1;transform:translate(-50%,0)}
+    @media(max-width:820px){main{grid-template-columns:1fr;max-width:650px}aside{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:20px}.turn{grid-column:1/-1}.stats{margin:0}.actions{margin:0}.rules{grid-column:1/-1;margin:0}}
+    @media(max-width:520px){body{padding:16px 12px 28px;place-items:start center}h1{font-size:45px}.lead{font-size:13px;margin-bottom:17px}.board-shell{border-radius:14px;padding:9px}aside{grid-template-columns:1fr;border-radius:18px}.turn,.rules{grid-column:auto}.stats{grid-template-columns:1fr 1fr}}
+    @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+  </style>
+</head>
+<body>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <main>
+    <section class="game">
+      <p class="eyebrow">Five in a row</p>
+      <h1>五子棋</h1>
+      <p class="lead">纵横十五路，落子定乾坤。黑棋先行，率先连成五子者胜。</p>
+      <div class="board-shell"><canvas id="board" tabindex="0" aria-label="十五乘十五五子棋棋盘。使用鼠标或触控落子；键盘方向键移动，回车落子。"></canvas></div>
+    </section>
+    <aside aria-label="游戏信息">
+      <div class="turn"><div class="stone" id="turnStone"></div><div><small>当前回合</small><strong id="turnText">黑棋落子</strong></div><span class="badge" id="statusBadge">对局中</span></div>
+      <div class="stats"><div class="stat"><span>已落子</span><b id="moveCount">0</b></div><div class="stat"><span>对局用时</span><b id="timer">00:00</b></div></div>
+      <div class="actions"><button class="primary" id="restart">重新开始</button><button class="secondary" id="undo" disabled>悔棋一步</button></div>
+      <p class="rules"><b>玩法</b><br>双方交替落子，横、竖或斜线率先连成五枚同色棋子即获胜。支持鼠标、触控和键盘操作。</p>
+    </aside>
+  </main>
+  <script>
+    const N=15,canvas=document.getElementById('board'),ctx=canvas.getContext('2d');
+    const ui={turnText:document.getElementById('turnText'),turnStone:document.getElementById('turnStone'),badge:document.getElementById('statusBadge'),count:document.getElementById('moveCount'),timer:document.getElementById('timer'),undo:document.getElementById('undo'),toast:document.getElementById('toast')};
+    let board,moves,current,winner,startTime,tick,hover={r:7,c:7},metrics;
+    function reset(){board=Array.from({length:N},()=>Array(N).fill(0));moves=[];current=1;winner=0;startTime=Date.now();clearInterval(tick);tick=setInterval(updateTimer,1000);updateTimer();updateUI();draw();toast('新对局开始 · 黑棋先行')}
+    function resize(){const rect=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(rect.width*dpr);canvas.height=Math.round(rect.height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);const pad=rect.width*.055,step=(rect.width-pad*2)/(N-1);metrics={size:rect.width,pad,step};draw()}
+    function draw(){if(!metrics)return;const {size,pad,step}=metrics;ctx.clearRect(0,0,size,size);ctx.lineWidth=1;ctx.strokeStyle='rgba(48,31,18,.72)';for(let i=0;i<N;i++){const p=pad+i*step;ctx.beginPath();ctx.moveTo(pad,p);ctx.lineTo(size-pad,p);ctx.stroke();ctx.beginPath();ctx.moveTo(p,pad);ctx.lineTo(p,size-pad);ctx.stroke()}[[3,3],[3,11],[7,7],[11,3],[11,11]].forEach(([r,c])=>{ctx.beginPath();ctx.arc(pad+c*step,pad+r*step,Math.max(2,step*.08),0,Math.PI*2);ctx.fillStyle='#3e2919';ctx.fill()});board.forEach((row,r)=>row.forEach((v,c)=>v&&stone(r,c,v)));if(!winner&&!board[hover.r][hover.c]){ctx.beginPath();ctx.arc(pad+hover.c*step,pad+hover.r*step,step*.39,0,Math.PI*2);ctx.fillStyle=current===1?'rgba(15,14,13,.17)':'rgba(255,255,255,.34)';ctx.fill()}if(moves.length){const m=moves.at(-1);ctx.beginPath();ctx.arc(pad+m.c*step,pad+m.r*step,Math.max(2.3,step*.08),0,Math.PI*2);ctx.fillStyle=m.p===1?'#e6c98f':'#b74b35';ctx.fill()}}
+    function stone(r,c,p){const {pad,step}=metrics,x=pad+c*step,y=pad+r*step,rad=step*.42,g=ctx.createRadialGradient(x-rad*.33,y-rad*.35,rad*.08,x,y,rad);if(p===1){g.addColorStop(0,'#5a554f');g.addColorStop(.48,'#171513');g.addColorStop(1,'#020202')}else{g.addColorStop(0,'#fff');g.addColorStop(.62,'#eee8dd');g.addColorStop(1,'#b9afa1')}ctx.beginPath();ctx.arc(x,y,rad,0,Math.PI*2);ctx.fillStyle=g;ctx.shadowColor='rgba(45,28,14,.28)';ctx.shadowBlur=rad*.45;ctx.shadowOffsetY=rad*.2;ctx.fill();ctx.shadowColor='transparent';if(p===2){ctx.strokeStyle='rgba(75,60,45,.26)';ctx.stroke()}}
+    function place(r,c){if(winner||board[r][c])return;board[r][c]=current;moves.push({r,c,p:current});if(hasWon(r,c,current)){winner=current;clearInterval(tick);toast((winner===1?'黑棋':'白棋')+'获胜！')}else if(moves.length===N*N){winner=3;clearInterval(tick);toast('和棋')}else current=3-current;updateUI();draw()}
+    function hasWon(r,c,p){return [[1,0],[0,1],[1,1],[1,-1]].some(([dr,dc])=>{let n=1;for(const s of [-1,1])for(let k=1;;k++){const rr=r+dr*k*s,cc=c+dc*k*s;if(rr<0||rr>=N||cc<0||cc>=N||board[rr][cc]!==p)break;n++}return n>=5})}
+    function point(e){const rect=canvas.getBoundingClientRect(),x=e.clientX-rect.left,y=e.clientY-rect.top,c=Math.round((x-metrics.pad)/metrics.step),r=Math.round((y-metrics.pad)/metrics.step);return{r:Math.max(0,Math.min(N-1,r)),c:Math.max(0,Math.min(N-1,c))}}
+    function updateUI(){ui.count.textContent=moves.length;ui.undo.disabled=!moves.length||!!winner;ui.turnStone.classList.toggle('white',current===2);if(winner){ui.turnText.textContent=winner===3?'势均力敌':winner===1?'黑棋获胜':'白棋获胜';ui.badge.textContent=winner===3?'和棋':'胜局'}else{ui.turnText.textContent=current===1?'黑棋落子':'白棋落子';ui.badge.textContent='对局中'}}
+    function updateTimer(){const sec=Math.floor((Date.now()-startTime)/1000),m=String(Math.floor(sec/60)).padStart(2,'0'),s=String(sec%60).padStart(2,'0');ui.timer.textContent=m+':'+s}
+    function toast(s){ui.toast.textContent=s;ui.toast.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>ui.toast.classList.remove('show'),1800)}
+    canvas.addEventListener('pointermove',e=>{hover=point(e);draw()});canvas.addEventListener('pointerdown',e=>{e.preventDefault();const p=point(e);place(p.r,p.c)});canvas.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();hover.r=Math.max(0,Math.min(N-1,hover.r+(e.key==='ArrowDown'?1:e.key==='ArrowUp'?-1:0)));hover.c=Math.max(0,Math.min(N-1,hover.c+(e.key==='ArrowRight'?1:e.key==='ArrowLeft'?-1:0)));draw()}if(e.key==='Enter'||e.key===' '){e.preventDefault();place(hover.r,hover.c)}});
+    document.getElementById('restart').onclick=reset;ui.undo.onclick=()=>{if(!moves.length||winner)return;const m=moves.pop();board[m.r][m.c]=0;current=m.p;hover={r:m.r,c:m.c};updateUI();draw();toast('已撤回一步')};window.addEventListener('resize',resize);new ResizeObserver(resize).observe(canvas);reset();
+  </script>
+</body>
+</html>
